@@ -57,26 +57,30 @@ function App() {
   // 削除ボタンが押されたときの処理
   const handleDelete = async (id) => {
     // APIにDELETEリクエストを送信
-    await fetch(`${BACKEND_ENDPOINT}/api/posts/${id}`, {
+    await fetch(`${BACKEND_ENDPOINT}/api/posts`, {
       method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id }),
     });
     // 削除した投稿を除いた投稿一覧を取得
     const newPosts = posts.filter((post) => post.id !== id);
     // 投稿一覧を更新
     setPosts(newPosts);
-  }
+  };
 
   // 編集ボタンが押されたときの処理
   const handleEdit = async (id) => {
     // 編集する投稿のIDを取得
     const content = prompt("編集内容を入力してください");
     // APIにPUTリクエストを送信
-    const res = await fetch(`${BACKEND_ENDPOINT}/api/posts/${id}`, {
+    const res = await fetch(`${BACKEND_ENDPOINT}/api/posts`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ id, content }),
     });
     // レスポンスをJSONとして解釈
     const data = await res.json();
@@ -88,7 +92,7 @@ function App() {
       return post;
     });
     setPosts(newPosts);
-  }
+  };
 
   // useEffectを使って、このコンポーネントが描画された時に実行される処理を書く
   useEffect(() => {
@@ -112,7 +116,7 @@ function App() {
           <div key={post.id} className="post-list__item">
             <span className="post-list__item__content">{post.content}</span>
             <span className="post-list__item__date">
-              {new Date(post.created_at).toLocaleString('ja-JP')}
+              {new Date(post.created_at).toLocaleString("ja-JP")}
               <button
                 onClick={() => handleDelete(post.id)}
                 className="post-form__submit-button"
@@ -121,7 +125,8 @@ function App() {
               </button>
               <button
                 onClick={() => handleEdit(post.id)}
-                className="post-form__submit-button">
+                className="post-form__submit-button"
+              >
                 編集
               </button>
             </span>
