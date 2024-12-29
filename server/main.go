@@ -29,6 +29,13 @@ const (
 
 	// 投稿の取得を行うSQL文
 	selectPosts = "SELECT * FROM posts ORDER BY created_at DESC"
+
+	// 投稿の削除を行うSQL文
+	deletePost = "DELETE FROM posts WHERE id = ?"
+
+	// 投稿の更新を行うSQL文
+	updatePost = "UPDATE posts SET content = ? WHERE id = ?"
+
 )
 
 // Postは、投稿を表す構造体
@@ -74,8 +81,10 @@ func main() {
 			getPosts(w, r, db)
 		case http.MethodPost:
 			createPost(w, r, db)
-		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
+		case http.MethodDelete:
+			detelePost(w, r, db)
+		case http.MethodPut:
+			UpdatePost(w, r, db)
 		}
 	}))
 
@@ -143,6 +152,54 @@ func createPost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	respondJSON(w, http.StatusCreated, post)
 }
 
+// 投稿を削除する
+// DELETE /api/posts
+func detelePost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	// リクエストボディの読み込み
+	var post Post
+	if err := decodeBody(r, &post); err != nil {
+		respondJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// 投稿の削除
+	_, err := db.Exec(deletePost, post.ID)
+	if err != nil {
+		panic(err)
+	}
+
+	// 更新した投稿をJSON形式でレスポンスする
+	respondJSON(w, http.StatusOK, post)
+
+
+}
+
+// 投稿を更新する
+// UPDATE /api/posts
+func UpdatePost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	// リクエストボディの読み込み
+	var post Post
+	if err := decodeBody(r, &post); err != nil {
+		respondJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	now := time.Now()
+	// 投稿の更新
+	_, err := db.Exec(updatePost, post.Content, post.ID)
+	if err != nil {
+		panic(err)
+	}
+
+
+	post.CreatedAt = now.Format("2006-01-02 15:04:05")
+
+	// 更新した投稿をJSON形式でレスポンスする
+	respondJSON(w, http.StatusOK, post)
+
+}
+
+
 // decodeBodyは、リクエストボディを構造体に変換する
 // 【触るのは非推奨】
 func decodeBody(r *http.Request, v interface{}) error {
@@ -173,7 +230,6 @@ func HandleCORS(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// レスポンスヘッダーの設定
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		// リクエストヘッダーの設定
 		if r.Method == http.MethodOptions {

@@ -54,6 +54,42 @@ function App() {
     e.target.reset();
   };
 
+  // 削除ボタンが押されたときの処理
+  const handleDelete = async (id) => {
+    // APIにDELETEリクエストを送信
+    await fetch(`${BACKEND_ENDPOINT}/api/posts/${id}`, {
+      method: "DELETE",
+    });
+    // 削除した投稿を除いた投稿一覧を取得
+    const newPosts = posts.filter((post) => post.id !== id);
+    // 投稿一覧を更新
+    setPosts(newPosts);
+  }
+
+  // 編集ボタンが押されたときの処理
+  const handleEdit = async (id) => {
+    // 編集する投稿のIDを取得
+    const content = prompt("編集内容を入力してください");
+    // APIにPUTリクエストを送信
+    const res = await fetch(`${BACKEND_ENDPOINT}/api/posts/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ content }),
+    });
+    // レスポンスをJSONとして解釈
+    const data = await res.json();
+    // 投稿一覧を更新
+    const newPosts = posts.map((post) => {
+      if (post.id === id) {
+        return data;
+      }
+      return post;
+    });
+    setPosts(newPosts);
+  }
+
   // useEffectを使って、このコンポーネントが描画された時に実行される処理を書く
   useEffect(() => {
     // APIから投稿データを取得
@@ -62,7 +98,7 @@ function App() {
 
   return (
     <main className="app-container">
-      <h1>匿名掲示板（仮アプリ）</h1>
+      <h1>ToDoアプり</h1>
       <h2>新規投稿</h2>
       <form onSubmit={handleSubmit} className="post-form">
         <textarea name="content" rows="5" className="post-form__textarea" />
@@ -77,6 +113,17 @@ function App() {
             <span className="post-list__item__content">{post.content}</span>
             <span className="post-list__item__date">
               {new Date(post.created_at).toLocaleString('ja-JP')}
+              <button
+                onClick={() => handleDelete(post.id)}
+                className="post-form__submit-button"
+              >
+                削除
+              </button>
+              <button
+                onClick={() => handleEdit(post.id)}
+                className="post-form__submit-button">
+                編集
+              </button>
             </span>
           </div>
         ))}
